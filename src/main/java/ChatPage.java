@@ -9,6 +9,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -19,13 +21,17 @@ public class ChatPage extends JFrame implements Runnable{
 
     String JwtToken;
     String enteredLogin;
-    JPanel panel;
 
-    JLabel loggedUser;
+    String receiver;
+    JPanel panel;
+    JLabel loggedUserLabel, friendsLabel, receiverLabel;
     JButton sendMessageButton, getMessagesButton;
     JTextField messageField, receiverField;
     JTextArea messagesArea;
 
+    JScrollPane messagesScrollPane;
+    JList<String> friendsList;
+    DefaultListModel<String> defaultListModel;
     Thread thread;
 
     public ChatPage(String JwtToken, String enteredLogin) {
@@ -38,24 +44,17 @@ public class ChatPage extends JFrame implements Runnable{
 
         panel = new JPanel(null);
 
-        //przykladowe zapytanie http get test2
-        try {
-            String getUrl = "http://localhost:8080/users/test2";
-            CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-            HttpGet get = new HttpGet(getUrl);
-            get.setHeader("Authorization", JwtToken);
-            CloseableHttpResponse response = httpClient.execute(get);
-
-            String responseString = new BasicResponseHandler().handleResponse(response);
-            System.out.println(responseString);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
         messageField = new JTextField();
         messagesArea = new JTextArea();
+        messagesScrollPane = new JScrollPane(messagesArea);
         receiverField = new JTextField();
-        loggedUser = new JLabel("Zalogowany: "+enteredLogin);
+        loggedUserLabel = new JLabel("Zalogowany: "+enteredLogin);
+        friendsLabel = new JLabel("Znajomi");
+        receiverLabel = new JLabel("Konwersacja z ");
+
+        friendsList = new JList<>();
+        defaultListModel = new DefaultListModel<>();
+        friendsList.setModel(defaultListModel);
 
         sendMessageButton = new JButton("Wyślij");
         sendMessageButton.addActionListener(new ActionListener() {
@@ -64,24 +63,28 @@ public class ChatPage extends JFrame implements Runnable{
                 //pobranie danych z pól tekstowych
                 try {
                     String content = messageField.getText();
-                    String receiver =  receiverField.getText();
-                    Message message  = new Message(enteredLogin, receiver, content);
+                    if(receiver==null) JOptionPane.showMessageDialog(panel, "Brak odbiorcy!");
+                    else if(content==null || content.isEmpty()) JOptionPane.showMessageDialog(panel, "Wiadomość nie może być pusta!");
+                    else {
+                        Message message = new Message(enteredLogin, receiver, content);
 
-                    //wysylanie zapytania post(wyslanie wiadomosci)
-                    String postUrl = "http://localhost:8080/messages";
-                    Gson gson = new Gson();
-                    CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-                    HttpPost post = new HttpPost(postUrl);
-                    StringEntity postingString = new StringEntity(gson.toJson(message));//gson.tojson() converts your pojo to json
-                    post.setEntity(postingString);
-                    post.setHeader("Content-type", "application/json");
-                    post.setHeader("Authorization", JwtToken);
-                    CloseableHttpResponse response = httpClient.execute(post);
+                        //wysylanie zapytania post(wyslanie wiadomosci)
+                        String postUrl = "http://localhost:8080/messages";
+                        Gson gson = new Gson();
+                        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+                        HttpPost post = new HttpPost(postUrl);
+                        StringEntity postingString = new StringEntity(gson.toJson(message));//gson.tojson() converts your pojo to json
+                        post.setEntity(postingString);
+                        post.setHeader("Content-type", "application/json");
+                        post.setHeader("Authorization", JwtToken);
+                        CloseableHttpResponse response = httpClient.execute(post);
+                        //System.out.println(response.getStatusLine().getStatusCode());
 
-                    System.out.println(response.getStatusLine().getStatusCode());
-
-                    if(response.getStatusLine().getStatusCode() != 200){
-                        JOptionPane.showMessageDialog(panel, "Nie udało się wysłać wiadomości!");
+                        if (response.getStatusLine().getStatusCode() != 200) {
+                            JOptionPane.showMessageDialog(panel, "Nie udało się wysłać wiadomości!");
+                        } else {
+                            messageField.setText("");
+                        }
                     }
                 }
                 catch (Exception ex){
@@ -89,35 +92,54 @@ public class ChatPage extends JFrame implements Runnable{
                 }
             }
         });
-        getMessagesButton = new JButton("Odbiorca");
+        getMessagesButton = new JButton("Nowy odbiorca");
         getMessagesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                    thread.start();
+                    receiver = receiverField.getText();
+                   // if(thread.getState().toString()=="NEW") thread.start();
             }
 
         });
 
-        messagesArea.setBounds(300, 130, 800, 440);
+        friendsList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                receiver = friendsList.getSelectedValue();
+                //if(thread.getState().toString()=="NEW") thread.start();
+            }
+        });
+
+        messagesScrollPane.setBounds(300, 130, 800, 440);
         messageField.setBounds(300, 580, 800,80);
         receiverField.setBounds(300, 80, 200,40);
 
-        sendMessageButton.setBounds(170,600,120,40);
-        getMessagesButton.setBounds(170, 80, 120,40);
+        sendMessageButton.setBounds(1105,580,70,80);
+        getMessagesButton.setBounds(505, 80, 120,40);
 
-        loggedUser.setBounds(300, 20, 300,40);
-        loggedUser.setFont(new Font("Serif", Font.PLAIN, 20));
+        loggedUserLabel.setBounds(300, 20, 300,40);
+        loggedUserLabel.setFont(new Font("Serif", Font.PLAIN, 25));
+        friendsLabel.setBounds(20,80,250, 40);
+        receiverLabel.setBounds(750, 80, 300,40);
+        friendsLabel.setFont(new Font("Serif", Font.PLAIN, 25));
+        receiverLabel.setFont(new Font("Serif", Font.PLAIN, 25));
+
+        friendsList.setBounds(20,130,250, 530);
 
         panel.add(messageField);
-        panel.add(messagesArea);
+        panel.add(messagesScrollPane);
         panel.add(receiverField);
         panel.add(sendMessageButton);
         panel.add(getMessagesButton);
-        panel.add(loggedUser);
+        panel.add(loggedUserLabel);
+        panel.add(friendsLabel);
+        panel.add(receiverLabel);
+        panel.add(friendsList);
+
 
         setContentPane(panel);
         setVisible(true);
-        System.out.println(this.JwtToken);
+        thread.start();
     }
 
     @Override
@@ -125,7 +147,6 @@ public class ChatPage extends JFrame implements Runnable{
         while (true){
             try {
                 List<Message> messages = new ArrayList<Message>();
-                String receiver =  receiverField.getText();
                 Gson gson = new Gson();
                 String getUrl = "http://localhost:8080/messages?username="+receiver;
                 CloseableHttpClient httpClient = HttpClientBuilder.create().build();
@@ -139,7 +160,30 @@ public class ChatPage extends JFrame implements Runnable{
                 for (Message m: messages) {
                     messagesArea.setText(messagesArea.getText()+m.getSender()+" <"+m.getPost_date()+">: " + m.getContent()+"\n");
                 }
+
+
+                List<String> friends = new ArrayList<String>();
+                getUrl = "http://localhost:8080/messages/friends";
+                httpClient = HttpClientBuilder.create().build();
+                get = new HttpGet(getUrl);
+                get.setHeader("Authorization", JwtToken);
+                response = httpClient.execute(get);
+
+                responseString = new BasicResponseHandler().handleResponse(response);
+                friends = gson.fromJson(responseString,  new TypeToken<List<String>>(){}.getType());
+                for(String f: friends) {
+                    boolean isOnList = false;
+                    for (int i = 0; i < defaultListModel.getSize(); i++) {
+                        //defaultListModel.addElement(friends.get(i));
+                        if(f.equals(defaultListModel.getElementAt(i)))isOnList=true;
+                    }
+                    if(!isOnList)defaultListModel.addElement(f);
+                }
+
+                if(receiver != null) receiverLabel.setText("Konwersacja z "+receiver);
+
                 Thread.sleep(2000);
+
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }catch (Exception er){

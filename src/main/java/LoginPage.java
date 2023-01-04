@@ -10,13 +10,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 
 
 public class LoginPage extends JFrame {
-    ;
     JButton loginButton, registerButton;
     JTextField loginField;
     JPasswordField passwordField;
@@ -66,8 +62,6 @@ public class LoginPage extends JFrame {
                     if (headers != null && headers.length > 0) {
                         value = headers[0].getValue();
                     }
-                    System.out.println(value);
-                    System.out.println(response.getStatusLine().getStatusCode());
 
                     if(response.getStatusLine().getStatusCode() == 200){
                         dispose();
