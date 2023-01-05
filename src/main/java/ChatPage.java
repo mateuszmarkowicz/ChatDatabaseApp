@@ -60,6 +60,7 @@ public class ChatPage extends JFrame implements Runnable{
         sendMessageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
                 //pobranie danych z pól tekstowych
                 try {
                     String content = messageField.getText();
@@ -110,6 +111,7 @@ public class ChatPage extends JFrame implements Runnable{
             }
         });
 
+
         messagesScrollPane.setBounds(300, 130, 800, 440);
         messageField.setBounds(300, 580, 800,80);
         receiverField.setBounds(300, 80, 200,40);
@@ -138,6 +140,7 @@ public class ChatPage extends JFrame implements Runnable{
 
 
         setContentPane(panel);
+        this.getRootPane().setDefaultButton(sendMessageButton);
         setVisible(true);
         thread.start();
     }

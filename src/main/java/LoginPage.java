@@ -135,6 +135,7 @@ public class LoginPage extends JFrame {
         panel.add(registerButton);
 
         setContentPane(panel);
+        this.getRootPane().setDefaultButton(loginButton);
         setVisible(true);
     }
 
