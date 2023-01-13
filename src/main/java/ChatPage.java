@@ -2,6 +2,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -14,6 +15,9 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +36,8 @@ public class ChatPage extends JFrame implements Runnable{
     JScrollPane messagesScrollPane;
     JList<String> friendsList;
     DefaultListModel<String> defaultListModel;
+
+    List<Friend> myFriends = new ArrayList<Friend>();
     Thread thread;
 
     public ChatPage(String JwtToken, String enteredLogin) {
@@ -41,6 +47,9 @@ public class ChatPage extends JFrame implements Runnable{
         this.thread = new Thread(this);
         setBounds(200, 100, 1200, 720);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //zmiana statusu na online
+        changeStatus(true);
+
 
         panel = new JPanel(null);
 
@@ -106,7 +115,9 @@ public class ChatPage extends JFrame implements Runnable{
         friendsList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                receiver = friendsList.getSelectedValue();
+                String receiverString = friendsList.getSelectedValue();
+                String[] receiverTable = receiverString.split("\\s+");
+                receiver = receiverTable[0];
                 //if(thread.getState().toString()=="NEW") thread.start();
             }
         });
@@ -138,12 +149,37 @@ public class ChatPage extends JFrame implements Runnable{
         panel.add(receiverLabel);
         panel.add(friendsList);
 
+        //zmiana statusu na offline po klinknieciu w krzyzyk
+        addWindowListener(new WindowAdapter()
+        {
+            @Override
+            public void windowClosing(WindowEvent e)
+            {
+                changeStatus(false);
+                e.getWindow().dispose();
+            }
+        });
+
 
         setContentPane(panel);
         this.getRootPane().setDefaultButton(sendMessageButton);
         setVisible(true);
         thread.start();
     }
+
+    public void changeStatus(boolean isOnline){
+        try {
+            String patchUrl = "http://localhost:8080/users/"+isOnline;
+            CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+            HttpPatch patch = new HttpPatch(patchUrl);
+            patch.setHeader("Content-type", "application/json");
+            patch.setHeader("Authorization", JwtToken);
+            CloseableHttpResponse response = httpClient.execute(patch);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     @Override
     public void run() {
@@ -164,8 +200,19 @@ public class ChatPage extends JFrame implements Runnable{
                     messagesArea.setText(messagesArea.getText()+m.getSender()+" <"+m.getPost_date()+">: " + m.getContent()+"\n");
                 }
 
+                try {
+                    String patchUrl = "http://localhost:8080/messages/"+receiver;
+                    httpClient = HttpClientBuilder.create().build();
+                    HttpPatch patch = new HttpPatch(patchUrl);
+                    patch.setHeader("Content-type", "application/json");
+                    patch.setHeader("Authorization", JwtToken);
+                    response = httpClient.execute(patch);
+                } catch (IOException er) {
+                    throw new RuntimeException(er);
+                }
 
-                List<String> friends = new ArrayList<String>();
+
+                List<Friend> friends = new ArrayList<Friend>();
                 getUrl = "http://localhost:8080/messages/friends";
                 httpClient = HttpClientBuilder.create().build();
                 get = new HttpGet(getUrl);
@@ -173,14 +220,27 @@ public class ChatPage extends JFrame implements Runnable{
                 response = httpClient.execute(get);
 
                 responseString = new BasicResponseHandler().handleResponse(response);
-                friends = gson.fromJson(responseString,  new TypeToken<List<String>>(){}.getType());
-                for(String f: friends) {
+                friends = gson.fromJson(responseString,  new TypeToken<List<Friend>>(){}.getType());
+
+                for(Friend f: friends) {
                     boolean isOnList = false;
                     for (int i = 0; i < defaultListModel.getSize(); i++) {
-                        //defaultListModel.addElement(friends.get(i));
-                        if(f.equals(defaultListModel.getElementAt(i)))isOnList=true;
+                        String listElementFullString = defaultListModel.getElementAt(i);
+                        String[] listElementTable = listElementFullString.split("\\s+");
+                        String listElement = listElementTable[0];
+                        if(f.getFriend().equals(listElement)){
+                            isOnList=true;
+                            if(f.getIs_online()==1 && f.getIs_all_read()==0)defaultListModel.setElementAt(f.getFriend()+" - aktywny, nowa wiadomość", i);
+                            else if(f.getIs_online()==1)defaultListModel.setElementAt(f.getFriend()+" - aktywny", i);
+                            else if(f.getIs_all_read()==0)defaultListModel.setElementAt(f.getFriend()+" - nowa wiadomość", i);
+                            else defaultListModel.setElementAt(f.getFriend(), i);
+
+                        }
                     }
-                    if(!isOnList)defaultListModel.addElement(f);
+                    if(!isOnList && f.getIs_online()==1 && f.getIs_all_read()==0)defaultListModel.addElement(f.getFriend()+" - aktywny, nowa wiadomość");
+                    else if(!isOnList && f.getIs_online()==1)defaultListModel.addElement(f.getFriend()+" - aktywny");
+                    else if(!isOnList && f.getIs_all_read()==0)defaultListModel.addElement(f.getFriend()+" - nowa wiadomość");
+                    else if(!isOnList)defaultListModel.addElement(f.getFriend());
                 }
 
                 if(receiver != null) receiverLabel.setText("Konwersacja z "+receiver);
