@@ -62,7 +62,8 @@ public class LoginPage extends JFrame {
                     if (headers != null && headers.length > 0) {
                         value = headers[0].getValue();
                     }
-
+                    //jesli logowanie sie powiodlo zamknij to okno i otworz okno czatu
+                    //jesli nie wyswietl odpowiedni komunikat
                     if(response.getStatusLine().getStatusCode() == 200){
                         dispose();
                         ChatPage chatPage = new ChatPage(value, enteredLogin);
@@ -92,13 +93,13 @@ public class LoginPage extends JFrame {
                     Gson gson = new Gson();
                     CloseableHttpClient httpClient = HttpClientBuilder.create().build();
                     HttpPost post = new HttpPost(postUrl);
-                    StringEntity postingString = new StringEntity(gson.toJson(candidateUser));//gson.tojson() converts your pojo to json
+                    StringEntity postingString = new StringEntity(gson.toJson(candidateUser));
                     post.setEntity(postingString);
                     post.setHeader("Content-type", "application/json");
                     CloseableHttpResponse response = httpClient.execute(post);
 
                     System.out.println(response.getStatusLine().getStatusCode());
-
+                    //wystwietlenie odpowiedniego komunikatu w zaleznosci od powodzenia rejestracji
                     if(response.getStatusLine().getStatusCode() == 200){
                         JOptionPane.showMessageDialog(panel, "Rejestracja udana!");
                     }else {
@@ -112,6 +113,7 @@ public class LoginPage extends JFrame {
             }
         });
 
+        //ustawiania interfejsu
         titleLabel.setFont(new Font("Serif", Font.PLAIN, 28));
         loginLabel.setFont(new Font("Serif", Font.PLAIN, 20));
         passwordLabel.setFont(new Font("Serif", Font.PLAIN, 20));
@@ -135,6 +137,7 @@ public class LoginPage extends JFrame {
         panel.add(registerButton);
 
         setContentPane(panel);
+        //powiozanie przycisku zaloguj z klawiszem enter
         this.getRootPane().setDefaultButton(loginButton);
         setVisible(true);
     }

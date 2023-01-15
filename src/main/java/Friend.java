@@ -1,5 +1,7 @@
 
 public class Friend {
+    //klasa odzwierciedlajaca dane znajomego
+    //czyli uzytkownika z ktorym mamy chociaz jedna wiadomosc
     private String friend;
     private int is_online;
     private int is_all_read;

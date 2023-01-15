@@ -1,6 +1,7 @@
 
 
 public class User {
+    //klasa odzwierciedlajaca podstatwowe dane uzytkownika(logwanie i rejestracja)
     private String username;
     private String password;
 
