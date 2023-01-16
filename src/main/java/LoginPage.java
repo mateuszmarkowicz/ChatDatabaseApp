@@ -57,16 +57,16 @@ public class LoginPage extends JFrame {
 
                     //pobieranie status odpowiedzi oraz JWT
                     Header[] headers = response.getAllHeaders();
-                    String value = null;
+                    String jwToken = null;
                     headers = response.getHeaders("Authorization");
                     if (headers != null && headers.length > 0) {
-                        value = headers[0].getValue();
+                        jwToken = headers[0].getValue();
                     }
                     //jesli logowanie sie powiodlo zamknij to okno i otworz okno czatu
                     //jesli nie wyswietl odpowiedni komunikat
                     if(response.getStatusLine().getStatusCode() == 200){
                         dispose();
-                        ChatPage chatPage = new ChatPage(value, enteredLogin);
+                        ChatPage chatPage = new ChatPage(jwToken, enteredLogin);
                     }else{
                         JOptionPane.showMessageDialog(panel, "Dane logowania sa nieprawidlowe!");
                     }

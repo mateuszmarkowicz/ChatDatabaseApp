@@ -40,6 +40,8 @@ public class ChatPage extends JFrame implements Runnable{
     List<Friend> myFriends = new ArrayList<Friend>();
     Thread thread;
 
+    final String serverAddress = "http://localhost:8080";
+
     public ChatPage(String JwtToken, String enteredLogin) {
         super("Czat");
         this.JwtToken=JwtToken;
@@ -80,7 +82,7 @@ public class ChatPage extends JFrame implements Runnable{
                         Message message = new Message(enteredLogin, receiver, content);
 
                         //wysylanie zapytania post(wyslanie wiadomosci)
-                        String postUrl = "http://localhost:8080/messages";
+                        String postUrl = serverAddress+"/messages";
                         Gson gson = new Gson();
                         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
                         HttpPost post = new HttpPost(postUrl);
@@ -176,7 +178,7 @@ public class ChatPage extends JFrame implements Runnable{
     //funcja odpowiedzialna za zmiane statusu uzytkownika(online/offline)
     public void changeStatus(boolean isOnline){
         try {
-            String patchUrl = "http://localhost:8080/users/"+isOnline;
+            String patchUrl = serverAddress+"/users/"+isOnline;
             CloseableHttpClient httpClient = HttpClientBuilder.create().build();
             HttpPatch patch = new HttpPatch(patchUrl);
             patch.setHeader("Content-type", "application/json");
@@ -196,7 +198,7 @@ public class ChatPage extends JFrame implements Runnable{
                 //(poprzez wyslanie zapytania Http)
                 List<Message> messages = new ArrayList<Message>();
                 Gson gson = new Gson();
-                String getUrl = "http://localhost:8080/messages?username="+receiver;
+                String getUrl = serverAddress+"/messages?username="+receiver;
                 CloseableHttpClient httpClient = HttpClientBuilder.create().build();
                 HttpGet get = new HttpGet(getUrl);
                 get.setHeader("Authorization", JwtToken);
@@ -212,7 +214,7 @@ public class ChatPage extends JFrame implements Runnable{
                 //ustawiajacego status nieprzeczytanych wiadomosci
                 //z danym uzytkownikiem na przeczytane
                 try {
-                    String patchUrl = "http://localhost:8080/messages/"+receiver;
+                    String patchUrl = serverAddress+"/messages/"+receiver;
                     httpClient = HttpClientBuilder.create().build();
                     HttpPatch patch = new HttpPatch(patchUrl);
                     patch.setHeader("Content-type", "application/json");
@@ -224,7 +226,7 @@ public class ChatPage extends JFrame implements Runnable{
 
                 //wyslanie zapytania pobierajacego liste zawierajaco dane znajomych
                 List<Friend> friends = new ArrayList<Friend>();
-                getUrl = "http://localhost:8080/messages/friends";
+                getUrl = serverAddress+"/messages/friends";
                 httpClient = HttpClientBuilder.create().build();
                 get = new HttpGet(getUrl);
                 get.setHeader("Authorization", JwtToken);
